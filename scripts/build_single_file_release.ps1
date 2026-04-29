@@ -8,18 +8,29 @@ param(
 $ErrorActionPreference = "Stop"
 
 $sevenZip = "C:\Program Files\7-Zip\7z.exe"
-$sfxStub = "C:\Program Files\7-Zip\7z.sfx"
-$workDir = Join-Path $env:TEMP "RocoDexQt_SFX"
-$archive = Join-Path $workDir "payload.7z"
-$config = Join-Path $workDir "config.txt"
+$compiler = Join-Path $QtRoot "bin\g++.exe"
+$windres = Join-Path $QtRoot "bin\windres.exe"
+$workDir = Join-Path $env:TEMP "RocoDexQt_SingleFile"
+$archive = Join-Path $workDir "payload.zip"
+$resourceScript = Join-Path $workDir "payload.rc"
+$resourceObject = Join-Path $workDir "payload_res.o"
 $listFile = Join-Path $workDir "files.txt"
+$launcherSource = Join-Path (Split-Path -Parent $PSScriptRoot) "launcher\RocoDexSingleFileLauncher.cpp"
 
 if (!(Test-Path $sevenZip)) {
     throw "7-Zip not found: $sevenZip"
 }
 
-if (!(Test-Path $sfxStub)) {
-    throw "7z SFX stub not found: $sfxStub"
+if (!(Test-Path $compiler)) {
+    throw "g++ not found: $compiler"
+}
+
+if (!(Test-Path $windres)) {
+    throw "windres not found: $windres"
+}
+
+if (!(Test-Path $launcherSource)) {
+    throw "Launcher source not found: $launcherSource"
 }
 
 New-Item -ItemType Directory -Path $workDir -Force | Out-Null
@@ -46,24 +57,11 @@ if (Test-Path $archive) {
     Remove-Item -LiteralPath $archive -Force
 }
 
-if (Test-Path $config) {
-    Remove-Item -LiteralPath $config -Force
+foreach ($tempFile in @($resourceScript, $resourceObject, $listFile)) {
+    if (Test-Path $tempFile) {
+        Remove-Item -LiteralPath $tempFile -Force
+    }
 }
-if (Test-Path $listFile) {
-    Remove-Item -LiteralPath $listFile -Force
-}
-
-$configText = @"
-;!@Install@!UTF-8!
-InstallPath="%TEMP%\RocoDexQt"
-GUIMode="2"
-OverwriteMode="2"
-Delete="1"
-RunProgram="RocoDexQt.exe"
-;!@InstallEnd@!
-"@
-
-Set-Content -LiteralPath $config -Value $configText -Encoding UTF8
 
 $cwd = Get-Location
 try {
@@ -76,29 +74,50 @@ try {
     }
 
     Set-Content -LiteralPath $listFile -Value ($fileList | Sort-Object) -Encoding UTF8
-    & $sevenZip a -t7z -mx=9 -mmt=on -scsUTF-8 $archive "@$listFile"
+    & $sevenZip a -tzip -mx=9 -mmt=on -scsUTF-8 $archive "@$listFile"
     if ($LASTEXITCODE -ne 0) {
-        throw "7z archive creation failed"
+        throw "zip archive creation failed"
     }
 }
 finally {
     Set-Location $cwd
 }
 
-$outStream = [System.IO.File]::Create($OutputExe)
-try {
-    foreach ($part in @($sfxStub, $config, $archive)) {
-        $inStream = [System.IO.File]::OpenRead($part)
-        try {
-            $inStream.CopyTo($outStream)
-        }
-        finally {
-            $inStream.Dispose()
-        }
-    }
-}
-finally {
-    $outStream.Dispose()
+$archiveForRc = $archive.Replace('\', '\\')
+$resourceText = @"
+#define IDR_PAYLOAD 101
+IDR_PAYLOAD RCDATA "$archiveForRc"
+"@
+Set-Content -LiteralPath $resourceScript -Value $resourceText -Encoding ASCII
+
+& $windres -O coff -o $resourceObject $resourceScript
+if ($LASTEXITCODE -ne 0) {
+    throw "windres resource compilation failed"
 }
 
-Write-Host "Created single-file package: $OutputExe"
+$compileArgs = @(
+    "-std=c++17",
+    "-O2",
+    "-finput-charset=UTF-8",
+    "-municode",
+    "-mwindows",
+    "-static",
+    "-static-libgcc",
+    "-static-libstdc++",
+    "-DUNICODE",
+    "-D_UNICODE",
+    $launcherSource,
+    $resourceObject,
+    "-o",
+    $OutputExe,
+    "-luser32",
+    "-lgdi32"
+)
+
+& $compiler @compileArgs
+if ($LASTEXITCODE -ne 0) {
+    throw "launcher compilation failed"
+}
+
+Write-Host "Created single-file launcher: $OutputExe"
+Write-Host "Runtime extraction directory: <exe directory>\RocoDexQt_runtime\app"
