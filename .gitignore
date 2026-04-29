@@ -9,5 +9,3 @@ CMakeUserPresets.json
 *.autosave
 *.tmp
 *.log
-resources/data/dex-bundle.json
-resources/offline/
