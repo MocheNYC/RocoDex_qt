@@ -1,0 +1,9 @@
+module RocoDex
+AttributeBadge 1.0 AttributeBadge.qml
+DataManager 1.0 DataManager.qml
+FilterRail 1.0 FilterRail.qml
+QuickPetStrip 1.0 QuickPetStrip.qml
+PetListItem 1.0 PetListItem.qml
+StatBars 1.0 StatBars.qml
+SkillCard 1.0 SkillCard.qml
+MatchupPanel 1.0 MatchupPanel.qml

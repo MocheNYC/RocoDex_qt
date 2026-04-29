@@ -1,0 +1,3 @@
+module RocoDex
+DexPage 1.0 DexPage.qml
+PetDetailPage 1.0 PetDetailPage.qml
