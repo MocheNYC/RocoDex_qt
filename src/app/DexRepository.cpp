@@ -191,6 +191,10 @@ QString resourcesRoot()
     if (QDir(cwdRoot).exists())
         return cwdRoot;
 
+    const QString embeddedRoot = QStringLiteral(":/resources");
+    if (QDir(embeddedRoot).exists())
+        return embeddedRoot;
+
     return QDir::currentPath() + QStringLiteral("/resources");
 }
 
@@ -270,7 +274,11 @@ DexDataBundle DexRepository::parseBundle(const QByteArray &payload, QString *err
 
 QString DexRepository::defaultBundlePath()
 {
-    return resourcesRoot() + QStringLiteral("/data/dex-bundle.json");
+    const QString localPath = resourcesRoot() + QStringLiteral("/data/dex-bundle.json");
+    if (QFile::exists(localPath))
+        return localPath;
+
+    return QStringLiteral(":/resources/data/dex-bundle.json");
 }
 
 QString DexRepository::userBundlePath()
@@ -345,5 +353,12 @@ QString DexRepository::imageSource(const QString &bundleImagePath)
         relative.remove(0, 1);
 
     const QString filePath = resourcesRoot() + QLatin1Char('/') + relative;
+    if (QFile::exists(filePath))
+        return QUrl::fromLocalFile(QDir::cleanPath(filePath)).toString();
+
+    const QString embeddedPath = QStringLiteral(":/resources/%1").arg(relative);
+    if (QFile::exists(embeddedPath))
+        return QStringLiteral("qrc%1").arg(embeddedPath);
+
     return QUrl::fromLocalFile(QDir::cleanPath(filePath)).toString();
 }

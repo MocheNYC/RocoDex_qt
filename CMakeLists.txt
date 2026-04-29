@@ -27,6 +27,25 @@ qt_add_executable(RocoDexQt
     src/app/PetListModel.cpp
 )
 
+file(GLOB_RECURSE ROCODEX_RUNTIME_RESOURCES
+    CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/resources/data/dex-bundle.json
+    ${CMAKE_SOURCE_DIR}/resources/offline/pets/*.png
+)
+
+set(ROCODEX_RESOURCE_ALIASES)
+foreach(_resource_file IN LISTS ROCODEX_RUNTIME_RESOURCES)
+    file(RELATIVE_PATH _resource_alias ${CMAKE_SOURCE_DIR}/resources ${_resource_file})
+    set_source_files_properties(${_resource_file} PROPERTIES QT_RESOURCE_ALIAS ${_resource_alias})
+    list(APPEND ROCODEX_RESOURCE_ALIASES ${_resource_file})
+endforeach()
+
+qt_add_resources(RocoDexQt rocodex_runtime_resources
+    PREFIX "/resources"
+    FILES
+        ${ROCODEX_RESOURCE_ALIASES}
+)
+
 qt_add_qml_module(RocoDexQt
     URI RocoDex
     VERSION 1.0
