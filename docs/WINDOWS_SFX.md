@@ -15,7 +15,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_single_file_release.ps1
 输出文件：
 
 ```text
-G:\RocoDex_qt\release\RocoDexQt_SFX.exe
+G:\RocoDex_qt\release\RocoDexQt.exe
 ```
 
 ## 适用范围

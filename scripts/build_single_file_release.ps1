@@ -2,7 +2,7 @@ param(
     [string]$QtRoot = "C:\msys64\ucrt64",
     [string]$BuildDir = "G:\RocoDex_qt\build",
     [string]$DeployDir = "G:\RocoDex_qt\release\RocoDexQt",
-    [string]$OutputExe = "G:\RocoDex_qt\release\RocoDexQt_SFX.exe"
+    [string]$OutputExe = "G:\RocoDex_qt\release\RocoDexQt.exe"
 )
 
 $ErrorActionPreference = "Stop"
